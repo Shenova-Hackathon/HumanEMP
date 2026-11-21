@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { AudioLines, BookOpenText, Check, ChevronRight, CircleHelp, Copy, FileText, Headphones, House, Languages, LockKeyhole, Menu, Mic, Moon, Pause, Play, ScanLine, Settings as SettingsIcon, ShieldCheck, Sparkles, Square, Sun, Upload, Volume2, X } from 'lucide-react';
-import { explainText, extractText } from './services/api.js';
+import { explainText, extractText, translateText } from './services/api.js';
 
 const nav = [
   { to: '/', label: 'Overview', icon: House, end: true },
@@ -14,37 +14,35 @@ const nav = [
 
 function App() {
   const [prefs, setPrefs] = useState(() => {
-    try { const saved = JSON.parse(localStorage.getItem('shenova-prefs') || '{}'); return { size: saved.size || 'regular', contrast: saved.contrast ?? false, theme: saved.theme || 'light' }; }
-    catch { return { size: 'regular', contrast: false, theme: 'light' }; }
+    try { return { size: 'regular', contrast: false, motion: false, theme: 'light', ...JSON.parse(localStorage.getItem('shenova-prefs') || '{}') }; }
+    catch { return { size: 'regular', contrast: false, motion: false, theme: 'light' }; }
   });
   const [drawer, setDrawer] = useState(false);
   useEffect(() => { localStorage.setItem('shenova-prefs', JSON.stringify(prefs)); }, [prefs]);
-  useEffect(() => { document.documentElement.dataset.size = prefs.size; document.documentElement.dataset.contrast = prefs.contrast; document.documentElement.dataset.theme = prefs.theme; document.querySelector('meta[name="theme-color"]')?.setAttribute('content', prefs.theme === 'dark' ? '#1C141A' : '#FFF8F4'); }, [prefs]);
+  useEffect(() => { document.documentElement.dataset.size = prefs.size; document.documentElement.dataset.contrast = prefs.contrast; document.documentElement.dataset.motion = prefs.motion; document.documentElement.dataset.theme = prefs.theme; document.querySelector('meta[name="theme-color"]')?.setAttribute('content', prefs.theme === 'dark' ? '#211c27' : '#f8f7f4'); }, [prefs]);
   useEffect(() => {
     const scale = prefs.size === 'large' ? 1.15 : prefs.size === 'larger' ? 1.3 : 1;
-    const restore = () => document.querySelectorAll('[data-a11y-font-size]').forEach(el => {
-      el.style.fontSize = el.dataset.a11yOriginalFontSize || '';
-      el.style.lineHeight = el.dataset.a11yOriginalLineHeight || '';
-      delete el.dataset.a11yFontSize;
-      delete el.dataset.a11yOriginalFontSize;
-      delete el.dataset.a11yOriginalLineHeight;
-      delete el.dataset.a11yBaseLineHeight;
+    const restore = () => document.querySelectorAll('[data-a11y-font-size]').forEach(element => {
+      element.style.fontSize = element.dataset.a11yOriginalFontSize || '';
+      element.style.lineHeight = element.dataset.a11yOriginalLineHeight || '';
+      delete element.dataset.a11yFontSize;
+      delete element.dataset.a11yOriginalFontSize;
+      delete element.dataset.a11yOriginalLineHeight;
     });
     const apply = () => {
       restore();
-      document.querySelectorAll('body *').forEach(el => {
-        if (el.closest('svg') || ['SCRIPT', 'STYLE', 'LINK', 'META'].includes(el.tagName)) return;
-        const computed = window.getComputedStyle(el);
+      document.querySelectorAll('body *').forEach(element => {
+        if (element.closest('svg') || ['SCRIPT', 'STYLE', 'LINK', 'META'].includes(element.tagName)) return;
+        const computed = window.getComputedStyle(element);
         const fontSize = Number.parseFloat(computed.fontSize);
         if (!Number.isFinite(fontSize)) return;
-        el.dataset.a11yFontSize = 'true';
-        el.dataset.a11yOriginalFontSize = el.style.fontSize;
-        el.dataset.a11yOriginalLineHeight = el.style.lineHeight;
-        el.dataset.a11yBaseLineHeight = computed.lineHeight;
+        element.dataset.a11yFontSize = 'true';
+        element.dataset.a11yOriginalFontSize = element.style.fontSize;
+        element.dataset.a11yOriginalLineHeight = element.style.lineHeight;
         if (scale !== 1) {
-          el.style.fontSize = `${fontSize * scale}px`;
+          element.style.fontSize = `${fontSize * scale}px`;
           const lineHeight = Number.parseFloat(computed.lineHeight);
-          if (computed.lineHeight.endsWith('px') && Number.isFinite(lineHeight)) el.style.lineHeight = `${lineHeight * scale}px`;
+          if (computed.lineHeight.endsWith('px') && Number.isFinite(lineHeight)) element.style.lineHeight = `${lineHeight * scale}px`;
         }
       });
     };
@@ -238,7 +236,7 @@ function SpeakPage(){const [text,setText]=useState(''),[language,setLanguage]=us
 
 function SimplifyPage(){const [text,setText]=useState(''),[result,setResult]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');async function simplify(){if(!text.trim()){setMessage('Paste some information to get started.');return;}setBusy(true);setMessage('');try{setResult(await explainText(text));}catch(e){setMessage(e.message);}finally{setBusy(false);}}return <div className="content feature-content"><Topline eyebrow="SIMPLIFY INFORMATION" title="Clarity begins here." description="Bring a tricky paragraph. Leave with a clearer understanding."/><div className="simplify-layout"><section className="panel simplify-input"><div className="panel-head"><div><span className="step-number">01</span><h2>What would you like help with?</h2></div><button className="text-button" onClick={()=>{setText('');setResult('');setMessage('');}}>Clear <X size={14}/></button></div><label className="sr-only" htmlFor="original">Paste the information you'd like simplified</label><textarea id="original" className="main-textarea simplify-textarea" placeholder="Paste a letter, instructions, or anything you'd like to understand more easilyâ€¦" value={text} onChange={e=>setText(e.target.value)}/><div className="textarea-foot"><span>Long or short, itâ€™s up to you.</span><span>{text.length} characters</span></div><button className="button button-primary" onClick={simplify} disabled={busy}>{busy?<><span className="spinner"/> Preparingâ€¦</>:<>Explain in simple language <ChevronRight size={16}/></>}</button>{message&&<p className="status-message" role="status">{message}</p>}<div className="example-box"><span className="example-label"><Sparkles size={13}/> EXAMPLE TO TRY</span><p>â€œThe library will be closed on public holidays and the first Monday of each month.â€</p><button onClick={()=>{setText('The library will be closed on public holidays and the first Monday of each month.');setMessage('Example added.');}}>Use this example <ChevronRight size={13}/></button></div></section><section className="simplify-output"><div className="output-head"><div><span className="step-number">02</span><h2>A clearer version</h2></div>{result&&<button className="text-button" onClick={()=>navigator.clipboard?.writeText(result).then(()=>setMessage('Simplified text copied.'))}><Copy size={14}/> Copy</button>}</div>{result?<div className="output-result">{result}</div>:<div className="output-empty"><div className="clarity-mark"><span/><span/><span/></div><h3>Understanding,<br/>made a little easier.</h3><p>Your simplified explanation will appear here.</p></div>}<div className="output-note"><ShieldCheck size={14}/> A helper for understanding, not a substitute for professional advice.</div></section></div><div className="integration-note"><Sparkles size={15}/> Simplification is not connected to an AI service yet. No result will be generated until one is configured.</div></div>}
 
-function SettingsPage({prefs,setPrefs}){function toggle(k){setPrefs(p=>({...p,[k]:!p[k]}));}return <div className="content feature-content"><Topline eyebrow="SETTINGS & PREFERENCES" title="Make this space yours." description="Small changes can make a big difference. Choose what feels comfortable."/><div className="settings-layout"><section className="panel settings-panel"><div className="settings-intro"><div className="settings-icon"><SettingsIcon size={19}/></div><div><h2>Accessibility preferences</h2><p>These settings stay on this device and apply throughout SHENOVA.</p></div></div><div className="setting-row"><div><h3>Text size</h3><p>Choose a comfortable reading size.</p></div><div className="segmented" role="group" aria-label="Text size">{[['regular','Regular'],['large','Large'],['larger','Larger']].map(([v,label])=><button key={v} className={prefs.size===v?'selected':''} aria-pressed={prefs.size===v} onClick={()=>setPrefs(p=>({...p,size:v}))}>{label}</button>)}</div></div><div className="setting-row"><div><h3>High contrast</h3><p>Make text and controls stand out more.</p></div><Toggle checked={prefs.contrast} onChange={()=>toggle('contrast')} label="High contrast"/></div></section><section className="settings-privacy"><div className="privacy-icon"><LockKeyhole size={17}/></div><div className="eyebrow">YOUR CONTROL MATTERS</div><h2>Your privacy,<br/>on your terms.</h2><p>Accessibility preferences are saved locally in this browser. Your recent activity is not tracked or sent anywhere.</p><div className="privacy-status"><Check size={15}/> Preferences stored on this device</div></section></div><div className="integration-note"><ShieldCheck size={15}/> Your preferences are saved automatically in this browser.</div></div>}
+function SettingsPage({prefs,setPrefs}){function toggle(k){setPrefs(p=>({...p,[k]:!p[k]}));}return <div className="content feature-content"><Topline eyebrow="SETTINGS & PREFERENCES" title="Make this space yours." description="Small changes can make a big difference. Choose what feels comfortable."/><div className="settings-layout"><section className="panel settings-panel"><div className="settings-intro"><div className="settings-icon"><SettingsIcon size={19}/></div><div><h2>Accessibility preferences</h2><p>These settings stay on this device and apply throughout SHENOVA.</p></div></div><div className="setting-row"><div><h3>Text size</h3><p>Choose a comfortable reading size.</p></div><div className="segmented" role="group" aria-label="Text size">{[['regular','Regular'],['large','Large'],['larger','Larger']].map(([v,label])=><button key={v} className={prefs.size===v?'selected':''} aria-pressed={prefs.size===v} onClick={()=>setPrefs({...prefs,size:v})}>{label}</button>)}</div></div><div className="setting-row"><div><h3>High contrast</h3><p>Make text and controls stand out more.</p></div><Toggle checked={prefs.contrast} onChange={()=>toggle('contrast')} label="High contrast"/></div><div className="setting-row"><div><h3>Reduce motion</h3><p>Keep movement and animation to a minimum.</p></div><Toggle checked={prefs.motion} onChange={()=>toggle('motion')} label="Reduce motion"/></div></section><section className="settings-privacy"><div className="privacy-icon"><LockKeyhole size={17}/></div><div className="eyebrow">YOUR CONTROL MATTERS</div><h2>Your privacy,<br/>on your terms.</h2><p>Accessibility preferences are saved locally in this browser. Your recent activity is not tracked or sent anywhere.</p><div className="privacy-status"><Check size={15}/> Preferences stored on this device</div></section></div><div className="integration-note"><ShieldCheck size={15}/> Your preferences are saved automatically in this browser.</div></div>}
 function Toggle({checked,onChange,label}){return <button className={`toggle ${checked?'on':''}`} role="switch" aria-checked={checked} aria-label={label} onClick={onChange}><span/></button>}
 
 export default App;
