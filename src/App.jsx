@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
-import { AudioLines, BookOpenText, Check, ChevronRight, CircleHelp, Copy, FileText, Headphones, House, Languages, LockKeyhole, Menu, Mic, Pause, Play, ScanLine, Settings as SettingsIcon, ShieldCheck, Sparkles, Square, Upload, Volume2, X } from 'lucide-react';
+import { AudioLines, BookOpenText, Check, ChevronRight, CircleHelp, Copy, FileText, Headphones, House, Languages, LockKeyhole, Menu, Mic, Moon, Pause, Play, ScanLine, Settings as SettingsIcon, ShieldCheck, Sparkles, Square, Sun, Upload, Volume2, X } from 'lucide-react';
 import { explainText, extractText } from './services/api.js';
 
 const nav = [
@@ -14,14 +14,15 @@ const nav = [
 
 function App() {
   const [prefs, setPrefs] = useState(() => {
-    try { return { size: 'regular', contrast: false, motion: false, ...JSON.parse(localStorage.getItem('shenova-prefs') || '{}') }; }
-    catch { return { size: 'regular', contrast: false, motion: false }; }
+    try { return { size: 'regular', contrast: false, motion: false, theme: 'light', ...JSON.parse(localStorage.getItem('shenova-prefs') || '{}') }; }
+    catch { return { size: 'regular', contrast: false, motion: false, theme: 'light' }; }
   });
   const [drawer, setDrawer] = useState(false);
   useEffect(() => { localStorage.setItem('shenova-prefs', JSON.stringify(prefs)); }, [prefs]);
-  useEffect(() => { document.documentElement.dataset.size = prefs.size; document.documentElement.dataset.contrast = prefs.contrast; document.documentElement.dataset.motion = prefs.motion; }, [prefs]);
+  useEffect(() => { document.documentElement.dataset.size = prefs.size; document.documentElement.dataset.contrast = prefs.contrast; document.documentElement.dataset.motion = prefs.motion; document.documentElement.dataset.theme = prefs.theme; document.querySelector('meta[name="theme-color"]')?.setAttribute('content', prefs.theme === 'dark' ? '#1C141A' : '#FFF8F4'); }, [prefs]);
   return <div className="app-shell">
     <button className="mobile-menu" aria-label="Open navigation" onClick={() => setDrawer(true)}><Menu /></button>
+    <button className="theme-toggle" type="button" onClick={()=>setPrefs(p=>({...p,theme:p.theme==='dark'?'light':'dark'}))} aria-label={`Switch to ${prefs.theme==='dark'?'light':'dark'} mode`} title={`Switch to ${prefs.theme==='dark'?'light':'dark'} mode`}>{prefs.theme==='dark'?<Moon size={17}/>:<Sun size={17}/>}<span>{prefs.theme==='dark'?'Dark':'Light'}</span></button>
     {drawer && <button className="drawer-scrim" aria-label="Close navigation" onClick={() => setDrawer(false)} />}
     <aside className={`sidebar ${drawer ? 'sidebar-open' : ''}`}>
       <div className="brand"><Link to="/" className="brand-mark" aria-label="Shenova AI home"><span className="mark-orbit"/><span className="mark-core"/></Link><div><Link to="/" className="brand-name">shenova<span> ai</span></Link><div className="brand-tag">Access information. Your way.</div></div><button className="close-drawer" aria-label="Close navigation" onClick={() => setDrawer(false)}><X size={19}/></button></div>
