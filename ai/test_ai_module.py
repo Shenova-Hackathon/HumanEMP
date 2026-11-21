@@ -99,8 +99,8 @@ class TestAIExplanationModule(unittest.TestCase):
         if "GEMINI_API_KEY" in os.environ:
             del os.environ["GEMINI_API_KEY"]
 
-        # Temporarily ensure GENAI_AVAILABLE is True for this check
-        with patch.object(explain, "GENAI_AVAILABLE", True):
+        with patch.object(explain, "GENAI_AVAILABLE", True), \
+             patch.object(explain, "load_dotenv", lambda *args, **kwargs: None):
             result = explain.simplify_text(
                 "Applicants must submit documentation.",
                 api_key=""
@@ -146,7 +146,7 @@ class TestAIExplanationModule(unittest.TestCase):
             # Verify prompt and config parameters passed to Gemini
             mock_client.models.generate_content.assert_called_once()
             call_kwargs = mock_client.models.generate_content.call_args.kwargs
-            self.assertEqual(call_kwargs["model"], "gemini-2.5-flash")
+            self.assertEqual(call_kwargs["model"], "gemini-3.5-flash")
             self.assertIn(input_text, call_kwargs["contents"])
 
     # --------------------------------------------------------------------------
